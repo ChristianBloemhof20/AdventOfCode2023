@@ -1,4 +1,4 @@
-FILE_NAME = 'test5.txt'
+FILE_NAME = 'input.txt'
 
 class PipeMaze:
     def __init__(self):
@@ -28,15 +28,6 @@ class PipeMaze:
         current_tile = self.maze[i][j]
         while current_tile != 'S':
             locations.append((i, j))
-            if direction == 'W':
-                direction_approached = 'E'
-            elif direction == 'E':
-                direction_approached = 'W'
-            elif direction == 'N':
-                direction_approached = 'S'
-            else:
-                direction_approached = 'N'
-            self.maze[i][j] = direction_approached
             i, j, direction = self.__get_next_location(current_tile, i, j, direction)
             current_tile = self.maze[i][j]
         
@@ -97,24 +88,35 @@ class PipeMaze:
     def count_inside_tiles(self):
         tiles_in_loop = 0
         self.s_val = self.__get_start_directions()
-        skip = ''
         
         for i in range(len(self.maze)):
             inside_loop = False
+            skip = ''
             for j in range(len(self.maze[i])):
                 tile = self.maze[i][j]
                 if tile == 'S':
                     tile = self.s_val
+                    self.path_tiles.append((i, j))
+                elif tile == '\n':
+                    continue
                 
                 if (i, j) in self.path_tiles:
-                    if tile == 'N':
-                        inside_loop = True
-                    elif tile == 'S':
-                        inside_loop = False
+                    if tile == 'F':
+                        skip = '7'
+                    elif tile == 'L':
+                        skip = 'J'
+                    elif tile == '|':
+                        inside_loop = not inside_loop
+                        skip = ''
+                    elif tile == '-':
+                        continue
+                    elif tile != skip:
+                        inside_loop = not inside_loop
+
                 elif inside_loop:
                     tiles_in_loop += 1
         
-        print(tiles_in_loop)
+        print(f'Tiles in loop: {tiles_in_loop}')
     
     
     def __get_start_directions(self):
