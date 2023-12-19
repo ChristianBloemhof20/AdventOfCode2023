@@ -1,10 +1,19 @@
-FILE_NAME = 'input.txt'
+FILE_NAME = 'test.txt'
+
+from functools import cache
 
 class Aplenty:
 
     def __init__(self):
         self.workflows = {}
         self.inputs = []
+        
+        self.ranges = {}
+        self.ranges['x'] = [0, 4000]
+        self.ranges['m'] = [0, 4000]
+        self.ranges['a'] = [0, 4000]
+        self.ranges['s'] = [0, 4000]
+        
         with open(FILE_NAME) as f:
             fill_dictionary = True
             for line in f.readlines():
@@ -14,33 +23,17 @@ class Aplenty:
                     workflow = line.split('{')[0]
                     instructions = line.split('{')[1]
                     instructions = instructions.split(',')
-                    order = []
 
                     for instruction in instructions:
                         # Check if it's the last instruction
                         if '}' in instruction:
                             self.workflows[workflow]['else'] = instruction.replace('}', '').replace('\n', '')
                         else:
-                            comparator = '<' if '<' in instruction else '>'
-                            variable = instruction.split(comparator)[0]
-                            value = instruction.split(comparator)[1].split(':')[0]
-                            result = instruction.split(comparator)[1].split(':')[1]
-                            order.append(variable)
-
                             if workflow not in self.workflows:
                                 self.workflows[workflow] = {}
+                                self.workflows[workflow]['conditional'] = []
                             
-                            if variable not in self.workflows[workflow]:
-                                self.workflows[workflow][variable] = {}
-                                self.workflows[workflow][variable]['comparator'] = []
-                                self.workflows[workflow][variable]['value'] = []
-                                self.workflows[workflow][variable]['result'] = []
-                            
-                            self.workflows[workflow][variable]['comparator'].append(comparator)
-                            self.workflows[workflow][variable]['value'].append(value)
-                            self.workflows[workflow][variable]['result'].append(result)
-                    else:
-                        self.workflows[workflow]['order'] = order
+                            self.workflows[workflow]['conditional'].append(instruction)
                 else:
                     values = line.replace('{', '').replace('}', '')
                     values = values.split(',')
@@ -54,54 +47,78 @@ class Aplenty:
         total_accepts = 0
         for input in self.inputs:
             result = 'in'
-            order_index = 0
             x = input[0]
             m = input[1]
             a = input[2]
             s = input[3]
-            x_index = 0
-            m_index = 0
-            a_index = 0
-            s_index = 0
+            index = 0
 
             while result != 'A' and result != 'R':
-                if order_index >= len(self.workflows[result]['order']):
+                if index >= len(self.workflows[result]['conditional']):
                     result = self.workflows[result]['else']
-                    order_index = 0
+                    index = 0
                 else:
-                    var_to_check = self.workflows[result]['order'][order_index]
-                    if var_to_check == 'x':
-                        var = x
-                        index = x_index
-                    elif var_to_check == 'm':
-                        var = m
-                        index = m_index
-                    elif var_to_check == 'a':
-                        var = a
-                        index = a_index
-                    else:
-                        var = s
-                        index = s_index
                     
-                    comparator = self.workflows[result][var_to_check]['comparator'][index]
-                    value = self.workflows[result][var_to_check]['value'][index]
-                    if eval(f'{var} {comparator} {value}'):
-                        order_index = 0
-                        x_index = 0
-                        m_index = 0
-                        a_index = 0
-                        s_index = 0
-                        result = self.workflows[result][var_to_check]['result'][order_index]
+                    conditional = self.workflows[result]['conditional'][index]
+                    condition = conditional.split(':')[0]
+                    condition_result = conditional.split(':')[1]
+                    if 'x' in condition:
+                        condition = condition.replace('x', str(x))
+                    elif 'm' in condition:
+                        condition = condition.replace('m', str(m))
+                    elif 'a' in condition:
+                        condition = condition.replace('a', str(a))
                     else:
-                        order_index += 1
+                        condition = condition.replace('s', str(s))
+                    
+                    if eval(condition):
+                        index = 0
+                        result = condition_result
+                    else:
                         index += 1
             
             if result == 'A':
                 total_accepts += x + m + a + s
-        print(f'Total result = {total_accepts}')
+        return total_accepts
 
+    @cache
+    def find_all_possible_combinations(self, current_workflow='in'):
+        # Find all possible paths to an A or an R and sum up the acceptance criteria to get there
+        if current_workflow == 'A':
+            return True
+        elif current_workflow == 'R':
+            return False
+        else:
+            conditions = self.workflows[current_workflow]['conditional']
+            for condition in conditions:
+                c, r = condition.split(':')
+                res = self.find_all_possible_combinations(r)
+                if res != False:
+                    operator = '>' if '>' in c else '<'
+                    var = c.split(operator)[0]
+                    num = int(c.split(operator)[1])
+                    if operator == '>':
+                        self.ranges[var][0] = max(self.ranges[var][0], num+1)
+                    else:
+                        self.ranges[var][1] = min(self.ranges[var][1], num-1)
+                else:
+                    return False
+            
+            return True
+    
+    def calculate_combinations(self):
+        x_val = self.ranges['x'][1] - self.ranges['x'][0]
+        m_val = self.ranges['m'][1] - self.ranges['m'][0]
+        a_val = self.ranges['a'][1] - self.ranges['a'][0]
+        s_val = self.ranges['s'][1] - self.ranges['s'][0]
+        print(f'Combinations: {x_val * m_val * a_val * s_val}')
 
-
+    
 if __name__ == '__main__':
     aplenty = Aplenty()
-    aplenty.evaluate()
+    total_accepts = aplenty.evaluate()
+    print(f'Total result = {total_accepts}')
+    
+    combinational_accepts = aplenty.find_all_possible_combinations()
+    aplenty.calculate_combinations()
+    print(f'Total Combinational Results = {combinational_accepts}')
