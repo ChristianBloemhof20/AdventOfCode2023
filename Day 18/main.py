@@ -1,6 +1,6 @@
 from copy import deepcopy
 from collections import deque
-FILE_NAME = 'test1.txt'
+FILE_NAME = 'input.txt'
 
 class LavaductLagoon:
     
@@ -16,10 +16,10 @@ class LavaductLagoon:
 
 
     def dig_hole(self):
-        coordinates = self.__get_coordinates()
-        # coordinates = self.__get_coordinates_from_instructions()
+        # coordinates = self.__get_coordinates()
+        coordinates = self.__get_coordinates_from_instructions()
         coordinates = self.__zero_coordinates(coordinates)
-        area = self.__shoelace(coordinates)
+
         max_length = max(coord[1] for coord in coordinates)
         max_height = max(coord[0] for coord in coordinates)
         
@@ -32,20 +32,6 @@ class LavaductLagoon:
             hole.append(deepcopy(hole_length))
         
         self.__dig(hole, coordinates)
-    
-    
-    def __shoelace(self, coordinates):
-        area = 0
-        for i in range(len(coordinates)):
-            n = (i+1)%len(coordinates)
-            x1 = coordinates[i][1]
-            y1 = coordinates[i][0]
-            x2 = coordinates[n][1]
-            y2 = coordinates[n][0]
-            
-            area += (x1 * y2) - (x2 * y1)
-        
-        return area / 2
     
     
     def __get_coordinates(self):
@@ -137,7 +123,7 @@ class LavaductLagoon:
                 string += hole[i][j]
             print(f'{string}\n')
         
-        filled_hole = self.__flood_fill(hole, 1, 185)
+        filled_hole = self.__flood_fill(hole)
         area = self.__calculate_area(filled_hole)
         print(f'Area of hole = {area}')
     
@@ -203,6 +189,36 @@ class LavaductLagoon:
                 f.write('\n')
 
 
+    # The correct and easy way, while the other way is more fun.
+    def shoelace_theorem(self):
+        coordinates_pt_1 = self.__get_coordinates()
+        coordinates_pt_2 = self.__get_coordinates_from_instructions()
+
+        area_pt_1 = self.__shoelace(coordinates_pt_1)
+        area_pt_2 = self.__shoelace(coordinates_pt_2)
+
+        print(f'Part 1 Area: {area_pt_1}')
+        print(f'Part 2 Area: {area_pt_2}')
+
+
+    def __shoelace(self, coordinates):
+        area = 0
+        perimeter = 0
+        for i in range(len(coordinates)):
+            n = (i+1)%len(coordinates)
+            x1 = coordinates[i][1]
+            y1 = coordinates[i][0]
+            x2 = coordinates[n][1]
+            y2 = coordinates[n][0]
+            
+            area += (x1 * y2) - (x2 * y1)
+            perimeter += abs((y2 - y1) + (x2 - x1))
+        
+        shoelace_area = area / 2
+        shoelace_area += perimeter//2 + 1
+        return shoelace_area
+
+
 if __name__ == '__main__':
     lavaduct_lagoon = LavaductLagoon()
-    lavaduct_lagoon.dig_hole()
+    lavaduct_lagoon.shoelace_theorem()
