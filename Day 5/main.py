@@ -1,6 +1,6 @@
 import copy
 
-FILENAME = 'input1.txt'
+FILENAME = 'test1.txt'
 NUM_CONVERSIONS = 7
 
 class LocationFinder:
